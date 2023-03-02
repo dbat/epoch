@@ -6,11 +6,11 @@ Timestamp to date converter
     All rights reserved.
 
     Timestamp to date converter
-    Version: 1.0.1.0, Build: 103, Date: 2020.03.08
+    Version: 1.0.1.2, Build: 112, Date: 2020.04.12
 
     Synopsys:
-      Convert the given number to datetime
-      datetime format: dd/mm/yyyy hh:mm:ss
+      Convert the given number to local datetime format
+      default datetime format: dd/mm/yyyy hh:mm:ss
 
     Usage:
       epoch [ options ] timestamp...
@@ -23,21 +23,30 @@ Timestamp to date converter
 
       options/switches (optional), the last one given, took precedent:
         switch can be prefixed by "-" (DASH) or "/" (SLASH)
-        switch also case insensitive, ie. "-n" is equal with "/N"
+        switch is case insensitive, ie. "-n" is equal with "/N"
         -x      Use UNIX epoch: seconds since 1970 (DEFAULT)
         -m      Use MS/Excel epoch: seconds since 1600
-        -l      interpret as local time (DEFAULT)
-        -u      interpret as UTC/GMT time
-        -s"str" use this str as separator for multiple timestamps
+        
+        -l      Interpret as local time (DEFAULT)
+        -u      Interpret as UTC/GMT time
+
+        -f N    Use this locale date format, where N is:
+                  1:    mm/dd/yyyy  (USA)
+                  2:    dd.mm.yyyy  (EU, Asia, Oz)
+                  3:    yyyy.mm.dd  (ISO)
+                  else: dd/mm/yyyy  (DEFAULT)
+
+        -s"str" Use this [str] as separator for multiple timestamps
                 (default is using new-line as separator)
+                [str] must be quoted if contain spaces or any special chars
 
-        -d      show the interpreted given numbers in the result (DEBUG)
-        -e      also show the original given numbers in the result (DEBUG)
-        -n      don't print the original/interpreted values (DEFAULT)
+        -d      Show the interpreted given numbers in the result (DEBUG)
+        -e      Also show the original given numbers in the result (DEBUG Ex)
+        -n      Don't print the original/interpreted values (DEFAULT)
 
-        -?|?    this help.
-        -!      Show limits.
-        --      stop parsing the next remaining arguments as options
+        -?|?    This Help
+        -!      Show limits
+        --      Stop parsing the next remaining arguments as options
 
 Examples:
 
