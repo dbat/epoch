@@ -61,6 +61,11 @@ __int64 ATOI64(char *s) {
 #define OPT_TDEBUG  0x08
 #define OPT_SPACE   0x10
 
+//#define DTM_EU1   0x000
+#define DTM_USA   0x100
+#define DTM_EU2   0x200
+#define DTM_ISO   0x300
+
 TCHAR * _getBasename(TCHAR * arg0);
 void Help(TCHAR *arg0) {
 	printf("\n");
@@ -70,11 +75,11 @@ void Help(TCHAR *arg0) {
 	printf("\n");
 
   printf("  Timestamp to date converter\n");
-  printf("  Version: 1.0.1.0, Build: 103, Date: 2020.03.08\n");
+  printf("  Version: 1.0.1.2, Build: 112, Date: 2020.04.12\n");
   printf("\n");
   printf("  Synopsys:\n");
-  printf("    Convert the given number to datetime\n");
-  printf("    datetime format: dd/mm/yyyy hh:mm:ss\n");
+  printf("    Convert the given numbers to local datetime format\n");
+  printf("    default datetime format: dd/mm/yyyy hh:mm:ss\n");
   printf("\n");
   printf("  Usage:\n");
   printf("    %s [ options ] timestamp...\n", _getBasename(arg0));
@@ -87,21 +92,30 @@ void Help(TCHAR *arg0) {
   printf("\n");
   printf("    options/switches (optional), the last one given, took precedent:\n");
   printf("\tswitch can be prefixed by \"-\" (DASH) or \"/\" (SLASH)\n");
-  printf("\tswitch also case insensitive, ie. \"-n\" is equal with \"/N\"\n");
+  printf("\tswitch is case insensitive, ie. \"-n\" is equal with \"/N\"\n");
   printf("\t-x\tUse UNIX epoch: seconds since 1970 (DEFAULT)\n");
   printf("\t-m\tUse MS/Excel epoch: seconds since 1600\n");
-  printf("\t-l\tinterpret as local time (DEFAULT)\n");
-  printf("\t-u\tinterpret as UTC/GMT time\n");
-  printf("\t-s\"str\"\tuse this str as separator for multiple timestamps\n");
+  printf("\n");
+  printf("\t-l\tInterpret as local time (DEFAULT)\n");
+  printf("\t-u\tInterpret as UTC/GMT time\n");
+  printf("\n");
+  printf("\t-f N\tUse this locale date format, where N is:\n");
+  printf("\t\t  %c:    mm/dd/yyyy  (USA)\n", (DTM_USA>>8)|'0');
+  printf("\t\t  %c:    dd.mm.yyyy  (EU, Asia, Oz)\n", (DTM_EU2>>8)|'0');
+  printf("\t\t  %c:    yyyy.mm.dd  (ISO)\n", (DTM_ISO>>8)|'0');
+  printf("\t\t  else: dd/mm/yyyy  (DEFAULT)\n");
+  printf("\n");
+  printf("\t-s\"str\"\tUse this [str] as separator for multiple timestamps\n");
   printf("\t\t(default is using new-line as separator)\n");
+  printf("\t\t[str] must be quoted if contain spaces or any special chars\n");
   printf("\n");
-  printf("\t-d\tshow the interpreted given numbers in the result (DEBUG)\n");
-  printf("\t-e\talso show the original given numbers in the result (DEBUG)\n");
-  printf("\t-n\tdon't print the original/interpreted values (DEFAULT)\n");
+  printf("\t-d\tShow the interpreted given numbers in the result (DEBUG)\n");
+  printf("\t-e\tAlso show the original given numbers in the result (DEBUG Ex)\n");
+  printf("\t-n\tDon't print the original/interpreted values (DEFAULT)\n");
   printf("\n");
-  printf("\t-?|?\tthis help.\n");
-  printf("\t-!\tShow limits.\n");
-  printf("\t--\tstop parsing the next remaining arguments as options\n");
+  printf("\t-?|?\tThis Help\n");
+  printf("\t-!\tShow limits\n");
+  printf("\t--\tStop parsing the next remaining arguments as options\n");
   printf("\n");
   printf("  Examples:\n");
 }
@@ -192,10 +206,28 @@ void cvtodate(char * const s, int options) {
 	if (options & OPT_LOCAL) i += TZDIFF;
 	int64ToFT(i, ft)
 	FileTimeToSystemTime(&ft, &tm);
-	printf("%.02d/%.02d/%d %.02d:%.02d:%.02d",
-		tm.wDay,tm.wMonth,tm.wYear, //tm.wDayOfWeek
-		tm.wHour,tm.wMinute,tm.wSecond
-	);
+    switch (options & 0x300) {
+		case DTM_USA:
+			printf("%.02d/%.02d/%d %.02d:%.02d:%.02d",
+				tm.wMonth,tm.wDay,tm.wYear, //tm.wDayOfWeek
+				tm.wHour,tm.wMinute,tm.wSecond
+			); break;
+		case DTM_EU2:
+			printf("%.02d-%.02d-%d %.02d:%.02d:%.02d",
+				tm.wDay,tm.wMonth,tm.wYear, //tm.wDayOfWeek
+				tm.wHour,tm.wMinute,tm.wSecond
+			); break;
+		case DTM_ISO:
+			printf("%d.%.02d.%.02d %.02d:%.02d:%.02d",
+				tm.wYear,tm.wMonth,tm.wDay, //tm.wDayOfWeek
+				tm.wHour,tm.wMinute,tm.wSecond
+			); break;
+		default:
+			printf("%.02d/%.02d/%d %.02d:%.02d:%.02d",
+				tm.wDay,tm.wMonth,tm.wYear, //tm.wDayOfWeek
+				tm.wHour,tm.wMinute,tm.wSecond
+			); break;
+	}
 
 	if(options & OPT_TDEBUG) printf(" (%s = %llu)", s, tmp);
 	else if(options & OPT_TSTAMP) printf(" (%llu)", tmp);
@@ -221,7 +253,7 @@ int main(int argn, char *args[]) {
 	//printf("lapse:%lld, TZDIFF:%lld\n", L, TZDIFF);
 
 
-	while ((c = getoptn(argn, args, _T("iemxuls:xmlus:den!XMULS:DEN!"))) != -1) {
+	while ((c = getoptn(argn, args, _T("def:lms:ux!DEF:LMS:UX"))) != -1) {
 		ch = args[optidx-1][1];
 		switch (tolower(c)) {
 			case _T('!'): return printmaxdate(); break;
@@ -229,6 +261,15 @@ int main(int argn, char *args[]) {
 			case _T('m'): options ^= OPT_UNIX; break;
 			case _T('l'): options |= OPT_LOCAL; break;
 			case _T('u'): options ^= OPT_LOCAL; break;
+			case _T('f'): options &= 0x0f;
+				if (optarg && *optarg && !optarg[1]) {
+					switch(*optarg) {
+						case _T('1'): options |= DTM_USA ; break;
+						case _T('2'): options |= DTM_EU2 ; break;
+						case _T('3'): options |= DTM_ISO ; break;
+					}
+				}
+			break;
 			case _T('s'): sep = optarg; break;
 			case _T('d'): options |= OPT_TSTAMP; break;
 			case _T('e'): options |= OPT_TDEBUG; break;
